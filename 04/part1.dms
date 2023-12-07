@@ -1,0 +1,35 @@
+_/1
+
+# find index of :, push it to the stack
+-':_/0\_:|+._:3':_>1_:-7':/<[
+
+# find index of |, push it to the stack
+-'|_/0\_:|+._:3'|_>1_:-7'|/<[
+
+_>|1_<1 # start at :
+_>3 # work through numbers left to right
+
+# if number is null (having gone through every card) jump to end to print output
+_:?1_:52
+
+# if we are looking at |, we have checked every number for this card, go next card
+-'|_/1_/0_\\_:!|+._:4'|_v1_<[_:-14
+
+# write working position + number to compare to the stack, then go to | to start search
+'|_/[_/._>1_/._<[_>|3_<1
+_>3 # work through numbers left to right
+
+# if number is null we have reached the end of the search on this row, try the next number
+_:?6_<[_>|2_\0_\0_\0_:-28
+
+# compare first digit against number we are searching for
+-|1_/1_/0_\\_:|+._:2
+|1_:-15 # no match, go next
+|1_>1-|0_/1_/0_\\_:|+._:3 # first digit matches, try second digit
+|0_<1_:-11 # no match, go next
+
+# match found! add 1 to cell left of row if 0, else double it. then go to next number
+|0_<!-[_:?1:1._>!-|2_\0_\0_\0_:-28
+
+# sum scores for each card, output the result
+_/0_<!-[-1_^]_:1-1\0_/._^[1_:?-6_^1*\0@0

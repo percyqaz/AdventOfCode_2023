@@ -1,0 +1,44 @@
+_/1
+
+# find index of :, push it to the stack
+-':_/0\_:|+._:3':_>1_:-7':/<[
+
+# find index of |, push it to the stack
+-'|_/0\_:|+._:3'|_>1_:-7'|/<[
+
+_>|1_<1 # start at :
+
+_>3 # work through numbers left to right
+
+# if number is null (having gone through every card) jump to end to print output
+_:?1_:50
+
+# if we are looking at |, we have checked every number for this card, go next card
+-'|_/1_/0_\\_:!|+._:4'|_v1_<[_:-14
+
+# write working position + number to compare to the stack, then go to | to start search
+'|_/[_/._>1_/._<[_>|3_<1
+_>3 # work through numbers left to right
+
+# if number is null we have reached the end of the search on this row, try the next number
+_:?6_<[_>|2_\0_\0_\0_:-28
+
+# compare first digit against number we are searching for
+-|1_/1_/0_\\_:|+._:2
+|1_:-15 # no match, go next
+|1_>1-|0_/1_/0_\\_:|+._:3 # first digit matches, try second digit
+|0_<1_:-11 # no match, go next
+
+# match found! add 1 to cell left of row
+|0_<!-[1_>!-|2_\0_\0_\0_:-26
+
+# add -1 markers to end loops, begin processing part 2 final output
+_\0_\0_\0_<!-[-1_/^]-^1_v\0
+
+# for each number N, fetch N numbers below it, sum them, add 1. replace cell with new total. move up and repeat until we see -1 marker
+1_:?1_:21-1
+_<!_/.\0_>1-._<1_v._>1
+_:?1_:2_^!_/._:-4_<1_:?3>1_^1_:-20_>1\0-<1_:-8
+
+# now for each number, sum the total until we see the other -1 marker
+_v/0_:1_v/.1_:?1_:2-!\0_:-6_*\0@0
