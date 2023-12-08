@@ -1,0 +1,1 @@
+Solved via [Google Sheets](https://docs.google.com/spreadsheets/d/1xe_21Ahg7SATHQCpbVYizvWzHI1n4SwvP9xfCINCMzY/edit#gid=621502214)
