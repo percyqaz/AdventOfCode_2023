@@ -1,0 +1,1 @@
+import functools;print(sum([functools.reduce(lambda a,b:((a+b)*17)%256,[ord(c)for c in word],0)for word in open("input.txt").read().strip().split(",")]))
