@@ -11,28 +11,6 @@
         | "s" -> Shiny
         | _ -> failwithf "Unexpected attribute '%s'" s
  
- type Part =
-    {
-        ExtremelyCoolLooking: int
-        Musical: int
-        Aerodynamic: int
-        Shiny: int
-    }
-    static member Parse(s: string) =
-        let split = s.Split([|'='; ','; '}'|])
-        {
-            ExtremelyCoolLooking = int split.[1]
-            Musical = int split.[3]
-            Aerodynamic = int split.[5]
-            Shiny = int split.[7]
-        }
-    member this.Attribute(attribute: Attribute) =
-        match attribute with
-        | ExtremelyCoolLooking -> this.ExtremelyCoolLooking
-        | Musical -> this.Musical
-        | Aerodynamic -> this.Aerodynamic
-        | Shiny -> this.Shiny
- 
  type RuleResult =
     | Accept
     | Reject
@@ -67,6 +45,54 @@ type Rule =
             Else = RuleResult.Parse split.[split.Length - 1]
         }
 
+type Restriction =
+    {
+        MinX: int
+        MaxX: int
+        MinM: int
+        MaxM: int
+        MinA: int
+        MaxA: int
+        MinS: int
+        MaxS: int
+    }
+
+    static member Default =
+        {
+            MinX = 1
+            MaxX = 4000
+            MinM = 1
+            MaxM = 4000
+            MinA = 1
+            MaxA = 4000
+            MinS = 1
+            MaxS = 4000
+        }
+
+    member this.Count = 
+        uint64 (this.MaxX - this.MinX + 1)
+        * uint64 (this.MaxM - this.MinM + 1)
+        * uint64 (this.MaxA - this.MinA + 1)
+        * uint64 (this.MaxS - this.MinS + 1)
+
+    member this.Empty = 
+        this.MaxX < this.MinX
+        || this.MaxM < this.MinM
+        || this.MaxA < this.MinA
+        || this.MaxS < this.MinS
+
+    member this.Intersect other =
+        {
+            MinX = max this.MinX other.MinX
+            MaxX = min this.MaxX other.MaxX
+            MinM = max this.MinM other.MinM
+            MaxM = min this.MaxM other.MaxM
+            MinA = max this.MinA other.MinA
+            MaxA = min this.MaxA other.MaxA
+            MinS = max this.MinS other.MinS
+            MaxS = min this.MaxS other.MaxS
+        }
+
 open System.IO
 open System.Collections.Generic
 
@@ -74,34 +100,80 @@ let lines = File.ReadAllLines("input.txt");;
 let rules = new Dictionary<string, Rule>();;
 let mutable parsing_rules = true;;
 
-let rec eval (rule: Rule) (part: Part) : bool =
-    let rec clause_loop (clauses: RuleClause list) =
+let rec restrictions (rule: Rule) (res: Restriction) : Restriction seq =
+
+    let rec clause_loop (clauses: RuleClause list) (res: Restriction) : Restriction seq =
         match clauses with
-        | [] -> None
+        | [] -> 
+            seq {
+                if not res.Empty then
+                    match rule.Else with
+                    | Accept -> yield res
+                    | Reject -> ()
+                    | AnotherRule r -> yield! restrictions rules.[r] res
+            }
         | GreaterThan (attr, amount, result) :: xs ->
-            if part.Attribute attr > amount then
-                match result with
-                | Accept -> Some true
-                | Reject -> Some false
-                | AnotherRule r -> Some (eval rules.[r] part)
-            else clause_loop xs
+            let res_if_met =
+                match attr with
+                | ExtremelyCoolLooking -> { res with MinX = max res.MinX (amount + 1) }
+                | Musical -> { res with MinM = max res.MinM (amount + 1) }
+                | Aerodynamic ->{ res with MinA = max res.MinA (amount + 1) }
+                | Shiny -> { res with MinS = max res.MinS (amount + 1) }
+            let res_if_not_met = 
+                match attr with
+                | ExtremelyCoolLooking -> { res with MaxX = min res.MaxX amount }
+                | Musical -> { res with MaxM = min res.MaxM amount }
+                | Aerodynamic -> { res with MaxA = min res.MaxA amount }
+                | Shiny -> { res with MaxS = min res.MaxS amount }
+
+            seq {
+                if not res_if_met.Empty then
+                    match result with
+                    | Accept -> yield res_if_met
+                    | Reject -> ()
+                    | AnotherRule r -> yield! restrictions rules.[r] res_if_met
+
+                yield! clause_loop xs res_if_not_met
+            }
+
         | LessThan (attr, amount, result) :: xs ->
-            if part.Attribute attr < amount then
-                match result with
-                | Accept -> Some true
-                | Reject -> Some false
-                | AnotherRule r -> Some (eval rules.[r] part)
-            else clause_loop xs
+            let res_if_met =
+                match attr with
+                | ExtremelyCoolLooking -> { res with MaxX = min res.MaxX (amount - 1) }
+                | Musical -> { res with MaxM = min res.MaxM (amount - 1) }
+                | Aerodynamic -> { res with MaxA = min res.MaxA (amount - 1) }
+                | Shiny -> { res with MaxS = min res.MaxS (amount - 1) }
+            let res_if_not_met = 
+                match attr with
+                | ExtremelyCoolLooking -> { res with MinX = max res.MinX amount }
+                | Musical -> { res with MinM = max res.MinM amount }
+                | Aerodynamic ->{ res with MinA = max res.MinA amount }
+                | Shiny -> { res with MinS = max res.MinS amount }
 
-    match clause_loop rule.Clauses with
-    | Some clause_hit -> clause_hit
-    | None -> 
-        match rule.Else with
-        | Accept -> true
-        | Reject -> false
-        | AnotherRule r -> eval rules.[r] part
+            seq {
+                if not res_if_met.Empty then
+                    match result with
+                    | Accept -> yield res_if_met
+                    | Reject -> ()
+                    | AnotherRule r -> yield! restrictions rules.[r] res_if_met
 
-let mutable accepted_value = 0;;
+                yield! clause_loop xs res_if_not_met
+            }
+
+    clause_loop rule.Clauses res
+
+let mutable count = 0uL
+
+let rec counter(xs: Restriction list) =
+    match xs with
+    | x :: xs -> 
+        count <- count + x.Count
+        for r in xs do
+            let intersect = x.Intersect r
+            if not intersect.Empty then
+                count <- count - intersect.Count
+        counter xs
+    | [] -> ()
 
 for line in lines do
     if line = "" then
@@ -109,8 +181,8 @@ for line in lines do
     elif parsing_rules then
         let name_length = line.IndexOf("{")
         rules[line.Substring(0, name_length)] <- Rule.Parse (line.Substring name_length)
-    else
-        let part = Part.Parse line
-        if eval rules.["in"] part then 
-            accepted_value <- accepted_value + part.ExtremelyCoolLooking + part.Musical + part.Aerodynamic + part.Shiny
-printfn "%i acceptance score" accepted_value
+    
+let xs = restrictions rules.["in"] Restriction.Default |> List.ofSeq
+counter xs
+
+printfn "%i" count
